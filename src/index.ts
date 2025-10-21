@@ -1,4 +1,4 @@
-import { WebSocketServer, WebSocket } from "ws";
+import WebSocket, { WebSocketServer } from "ws";
 const PORT = 8080;
 
 const wss = new WebSocketServer({
@@ -10,12 +10,11 @@ interface User {
 }
 let userCount=0;
 let allSocket:User[]=[];
-wss.on("connection",function(socket){
+wss.on("connection",function(socket:WebSocket){
     console.log("a user connected")
     userCount++;
-    socket.on("message",(message)=>{
-        // @ts-ignore
-        const parsedMessage=JSON.parse(message as unknown as string);
+    socket.on("message",(message: WebSocket.RawData)=>{
+        const parsedMessage: any = JSON.parse(message.toString());
         if (parsedMessage.type === "join") {
             console.log("a user joined room: "+parsedMessage.payload.roomId);
             allSocket.push({
