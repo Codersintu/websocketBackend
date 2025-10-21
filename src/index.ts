@@ -1,6 +1,8 @@
 import { WebSocketServer, WebSocket } from "ws";
+const PORT = 8080;
+
 const wss = new WebSocketServer({
-    port: 8080
+    port:Number(PORT)
 });
 interface User {
     socket: WebSocket,
@@ -38,3 +40,4 @@ wss.on("connection",function(socket){
         }
     })
 })
+
