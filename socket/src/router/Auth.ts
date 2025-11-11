@@ -1,7 +1,6 @@
 import express from "express"
 import User from "../module/User.js";
-import z from "zod";
-import { validateData } from "../zod.js";
+import z, { success } from "zod";
 import dotenv from "dotenv"
 dotenv.config()
 import jwt from "jsonwebtoken"
@@ -27,21 +26,32 @@ const imagekit = new ImageKit({
   urlEndpoint: "https://ik.imagekit.io/j3whydwtk",
 });
 export const userRegistrationSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(4),
+  email: z.string().email({message:"Invalid Formate Email"}),
+  password: z.string().min(4,{message:"password must be 4 character"}),
 });
 
-router.post("/signup",upload.single("file"), validateData(userRegistrationSchema), async (req, res) => {
-  if (!req.file) return res.status(400).send("No file uploaded.");
+router.post("/signup",upload.single("file"), async (req, res) => {
+  if (!req.file) return res.status(400).json({message:"No file uploaded."});
   const {email, password } = req.body;
+   const result=userRegistrationSchema.safeParse({email,password})
+   if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        details:result.error.issues.map((issues)=>({
+          message:issues.message,
+          path:issues.path.join('')
+        }))
+      });
+    }
+
   if (!email || !password) {
-    return res.status(400).json({ error: "Email and password are required" });
+    return res.status(400).json({ message:"Email and password are required"} );
   }
 
   try {
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(404).json({ error: "Email already registered" });
+      return res.status(404).json({ message: "Email already registered" });
     }
 
     const basename=email.split('@')[0];
@@ -75,8 +85,7 @@ router.post("/signup",upload.single("file"), validateData(userRegistrationSchema
     const errorMessage = error instanceof Error ? error.message : String(error);
     return res.status(500).json({
       success: false,
-      message: "Signup failed",
-      error: errorMessage,
+      message: errorMessage,
     });
   }
 });
